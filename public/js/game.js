@@ -19,6 +19,7 @@ let isRunSoundPlaying = false;
 let timer = 60;
 let timerId;
 
+
 function decreaseTimer() {
   if (paused) {
     // retry check after 1s while paused
@@ -44,6 +45,7 @@ function decreaseTimer() {
     }
   }
 }
+
 
 
 function rectangularCollision({ rectangle1, rectangle2 }) {
@@ -453,7 +455,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 function startGame() {
-  timer = 60; // reset
+  timer = 60;
   decreaseTimer();
   document.getElementById("gameContainer").style.display = "inline-block";
 }
@@ -594,7 +596,11 @@ window.addEventListener('keyup', (event) => {
 
 // game over interface logic
 function showGameOver(winnerName) {
-  if (matchSaved) return;   // ✅ make extra sure
+
+  clearTimeout(timerId);   
+  gameOver = true;
+  
+  if (matchSaved) return;  
   
   const screen = document.getElementById('gameOverScreen')
   const winnerText = document.getElementById('winnerText')

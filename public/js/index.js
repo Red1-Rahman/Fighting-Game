@@ -1,3 +1,7 @@
+if (window.location.pathname.includes("index.html") || window.location.pathname === "/" ) {
+  localStorage.setItem("musicEnabled", "false"); // reset each time
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("button").forEach(btn => {
     btn.addEventListener("mouseenter", () => {

@@ -288,7 +288,21 @@
       window.location.href = 'game.html';
     }
 
-  
+    function ensureMusicPlaying() {
+    const music = window.gameSounds?.backgroundMusic;
+    const musicEnabled = localStorage.getItem("musicEnabled") === "true";
+
+    if (music && musicEnabled && music.paused) {
+      music.play().catch(() => {});
+    }
+  }
+
+  // Listen for any user interaction
+  ["click", "keydown", "input", "focus"].forEach(evt => {
+    document.addEventListener(evt, ensureMusicPlaying, { passive: true });
+  });
+
+
   </script>
 </body>
 </html>

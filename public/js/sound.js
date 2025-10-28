@@ -63,3 +63,20 @@ function unlockAudio() {
   document.removeEventListener("click", unlockAudio);
   document.removeEventListener("keydown", unlockAudio);
 }
+
+
+if (!window.gameSounds) window.gameSounds = {};
+
+if (!window.soundsLoaded) {
+  Object.entries(soundsToLoad).forEach(([key, src]) => {
+    if (key === "backgroundMusic" && window.gameSounds.backgroundMusic) return; // don't reload
+    const audio = new Audio(src);
+    audio.preload = "auto";
+    if (key === "backgroundMusic") {
+      audio.loop = true;
+      audio.volume = 0.2;
+    }
+    window.gameSounds[key] = audio;
+  });
+  window.soundsLoaded = true;
+}
