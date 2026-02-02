@@ -47,6 +47,16 @@ let removedHidden = false;
 let paused = false; 
 let isRunSoundPlaying = false;
 
+// AI Configuration
+let aiController = null;
+let gameMode = localStorage.getItem('gameMode') || '2player';
+let aiDifficulty = localStorage.getItem('aiDifficulty') || 'medium';
+
+// Initialize AI if in AI mode
+if (gameMode === 'ai' && typeof AIController !== 'undefined') {
+  aiController = new AIController(aiDifficulty);
+}
+
 
 let timer = 60;
 let timerId;
@@ -307,19 +317,57 @@ function animate() {
     player.switchSprite('fall')
   }
 
-  // enemy movement
+  // enemy movement (AI or Player 2)
   enemy.facingLeft = player.position.x > enemy.position.x
-  if (keys.ArrowLeft.pressed && enemy.lastKey === 'ArrowLeft' && enemy.position.x > 0) {
-    enemy.velocity.x = -5
-    enemy.switchSprite('run')
-  } else if (keys.ArrowRight.pressed && enemy.lastKey === 'ArrowRight' && enemy.position.x + enemy.width < canvas.width) {
-    enemy.velocity.x = 5
-    enemy.switchSprite('run')
+  
+  if (gameMode === 'ai' && aiController) {
+    // AI-controlled enemy
+    const aiAction = aiController.update(enemy, player, Date.now());
+    
+    // Execute AI decisions
+    if (aiAction.move) {
+      if (aiAction.move === 'left' && enemy.position.x > 0) {
+        enemy.velocity.x = -5;
+        enemy.switchSprite('run');
+      } else if (aiAction.move === 'right' && enemy.position.x + enemy.width < canvas.width) {
+        enemy.velocity.x = 5;
+        enemy.switchSprite('run');
+      }
+    } else if (aiAction.idle) {
+      enemy.switchSprite('idle');
+    }
+    
+    if (aiAction.jump && enemy.position.y + enemy.height >= canvas.height - 96) {
+      window.gameSounds.jump.currentTime = 0;
+      window.gameSounds.jump.play();
+      enemy.velocity.y = -20;
+      
+      // Apply jump direction
+      if (aiAction.moveDirection === 'left' && enemy.position.x > 0) {
+        enemy.velocity.x = -5;
+      } else if (aiAction.moveDirection === 'right' && enemy.position.x + enemy.width < canvas.width) {
+        enemy.velocity.x = 5;
+      }
+    }
+    
+    if (aiAction.attack) {
+      enemy.attack();
+    }
+    
   } else {
-    enemy.switchSprite('idle')
+    // Player 2 keyboard controls
+    if (keys.ArrowLeft.pressed && enemy.lastKey === 'ArrowLeft' && enemy.position.x > 0) {
+      enemy.velocity.x = -5;
+      enemy.switchSprite('run');
+    } else if (keys.ArrowRight.pressed && enemy.lastKey === 'ArrowRight' && enemy.position.x + enemy.width < canvas.width) {
+      enemy.velocity.x = 5;
+      enemy.switchSprite('run');
+    } else {
+      enemy.switchSprite('idle');
+    }
   }
 
-  // jumping
+  // jumping animations
   if (enemy.velocity.y < 0) {
     enemy.switchSprite('jump')
   } else if (enemy.velocity.y > 0) {
@@ -327,12 +375,19 @@ function animate() {
   }
 
   // --- Running sound ---
-if (
-  (keys.a.pressed && player.lastKey === 'a') || 
-  (keys.d.pressed && player.lastKey === 'd') ||
-  (keys.ArrowLeft.pressed && enemy.lastKey === 'ArrowLeft') || 
-  (keys.ArrowRight.pressed && enemy.lastKey === 'ArrowRight')
-) {
+let anyoneMoving = (keys.a.pressed && player.lastKey === 'a') || 
+                   (keys.d.pressed && player.lastKey === 'd');
+
+// Check enemy movement (keyboard or AI)
+if (gameMode === '2player') {
+  anyoneMoving = anyoneMoving || 
+                 (keys.ArrowLeft.pressed && enemy.lastKey === 'ArrowLeft') || 
+                 (keys.ArrowRight.pressed && enemy.lastKey === 'ArrowRight');
+} else if (gameMode === 'ai' && enemy.velocity.x !== 0) {
+  anyoneMoving = true;
+}
+
+if (anyoneMoving) {
   playRunSound();
 } else {
   stopRunSound();
@@ -525,28 +580,31 @@ window.addEventListener('keydown', (event) => {
   }
 
   if (!enemy.dead) {
-    switch (event.key) {
-      case 'ArrowRight':
-        keys.ArrowRight.pressed = true
-        enemy.lastKey = 'ArrowRight'
-        break
-      case 'ArrowLeft':
-        keys.ArrowLeft.pressed = true
-        enemy.lastKey = 'ArrowLeft'
-        break
-      case 'ArrowUp':
-        if (enemy.position.y + enemy.height >= canvas.height - 96) { 
-          // Only jump if enemy is on the ground
-          window.gameSounds.jump.currentTime = 0;
-          window.gameSounds.jump.play();
-          enemy.velocity.y = -20;
-        }
-        break
-      case 'ArrowDown':
-        window.gameSounds.attack.currentTime = 0;
-        window.gameSounds.attack.play();
-        enemy.attack()
-        break
+    // Only allow keyboard control in 2-player mode
+    if (gameMode === '2player') {
+      switch (event.key) {
+        case 'ArrowRight':
+          keys.ArrowRight.pressed = true
+          enemy.lastKey = 'ArrowRight'
+          break
+        case 'ArrowLeft':
+          keys.ArrowLeft.pressed = true
+          enemy.lastKey = 'ArrowLeft'
+          break
+        case 'ArrowUp':
+          if (enemy.position.y + enemy.height >= canvas.height - 96) { 
+            // Only jump if enemy is on the ground
+            window.gameSounds.jump.currentTime = 0;
+            window.gameSounds.jump.play();
+            enemy.velocity.y = -20;
+          }
+          break
+        case 'ArrowDown':
+          window.gameSounds.attack.currentTime = 0;
+          window.gameSounds.attack.play();
+          enemy.attack()
+          break
+      }
     }
   }
 })
