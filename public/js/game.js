@@ -2,8 +2,40 @@
 const canvas = document.querySelector('canvas')
 const c = canvas.getContext('2d')
 
-canvas.width = 1024
-canvas.height = 576
+// Base game dimensions (16:9 aspect ratio)
+const BASE_WIDTH = 1024
+const BASE_HEIGHT = 576
+const ASPECT_RATIO = BASE_WIDTH / BASE_HEIGHT
+
+// Set initial canvas size
+canvas.width = BASE_WIDTH
+canvas.height = BASE_HEIGHT
+
+// Scale canvas to fit screen while maintaining aspect ratio
+function resizeCanvas() {
+  const windowWidth = window.innerWidth
+  const windowHeight = window.innerHeight
+  const windowAspectRatio = windowWidth / windowHeight
+
+  let scale
+  if (windowAspectRatio > ASPECT_RATIO) {
+    // Window is wider than game aspect ratio
+    scale = windowHeight / BASE_HEIGHT
+  } else {
+    // Window is taller than game aspect ratio
+    scale = windowWidth / BASE_WIDTH
+  }
+
+  // Apply scaling via CSS
+  canvas.style.width = Math.floor(BASE_WIDTH * scale) + 'px'
+  canvas.style.height = Math.floor(BASE_HEIGHT * scale) + 'px'
+}
+
+// Initial resize
+resizeCanvas()
+
+// Resize on window resize
+window.addEventListener('resize', resizeCanvas)
 
 c.fillRect(0, 0, canvas.width, canvas.height)
 
